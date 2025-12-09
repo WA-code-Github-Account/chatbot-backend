@@ -54,7 +54,7 @@ const config = {
         items: [
           {
             type: 'doc',
-            docId: 'intro',
+            docId: 'physical-ai-humanoid-robotics/intro',
             position: 'left',
             label: '📚 Book',
           },
