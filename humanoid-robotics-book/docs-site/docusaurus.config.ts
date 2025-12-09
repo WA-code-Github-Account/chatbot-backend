@@ -1,9 +1,8 @@
-// @ts-check
-const lightCodeTheme = require('prism-react-renderer/themes/github');
-const darkCodeTheme = require('prism-react-renderer/themes/dracula');
+import {themes as prismThemes} from 'prism-react-renderer';
+import type {Config} from '@docusaurus/types';
+import type * as Preset from '@docusaurus/preset-classic';
 
-/** @type {import('@docusaurus/types').Config} */
-const config = {
+const config: Config = {
   title: 'Physical AI & Humanoid Robotics',
   tagline: 'A Comprehensive Guide to Building Intelligent Humanoid Systems',
   favicon: 'img/favicon.ico',
@@ -25,72 +24,73 @@ const config = {
   presets: [
     [
       'classic',
-      /** @type {import('@docusaurus/preset-classic').Options} */
-      ({
+      {
         docs: {
-          sidebarPath: require.resolve('./sidebars.js'),
+          sidebarPath: './sidebars.ts',
           routeBasePath: '/',
         },
         blog: false,
         theme: {
-          customCss: require.resolve('./src/css/custom.css'),
+          customCss: './src/css/custom.css',
         },
-      }),
+      } satisfies Preset.Options,
     ],
   ],
 
-  themeConfig:
-    /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
-    ({
-      navbar: {
-        title: 'Humanoid Robotics',
-        logo: {
-          alt: 'Humanoid Robotics Logo',
-          src: 'img/logo.svg',
+  themeConfig: {
+    navbar: {
+      title: 'Humanoid Robotics',
+      logo: {
+        alt: 'Humanoid Robotics Logo',
+        src: 'img/logo.svg',
+      },
+      items: [
+        {
+          type: 'doc',
+          docId: 'physical-ai-humanoid-robotics/intro',
+          position: 'left',
+          label: '📚 Book',
         },
-        items: [
-          {
-            type: 'doc',
-            docId: 'physical-ai-humanoid-robotics/intro',
-            position: 'left',
-            label: '📚 Book',
-          },
-          {
-            href: 'https://github.com/yourusername/humanoid-robotics-book',
-            label: 'GitHub',
-            position: 'right',
-          },
-        ],
-      },
-      footer: {
-        style: 'dark',
-        links: [
-          {
-            title: 'Documentation',
-            items: [
-              {
-                label: 'Introduction',
-                to: '/physical-ai-humanoid-robotics/intro',
-              },
-            ],
-          },
-          {
-            title: 'Connect',
-            items: [
-              {
-                label: 'GitHub',
-                href: 'https://github.com/yourusername/humanoid-robotics-book',
-              },
-              {
-                label: 'GIAIC',
-                href: 'https://www.giaic.com',
-              },
-            ],
-          },
-        ],
-        copyright: `Copyright © ${new Date().getFullYear()} Aziza Siddiqui | GIAIC Student. Built with Docusaurus.`,
-      },
-    }),
+        {
+          href: 'https://github.com/WA-code-Github-Account/humanoid-robotics-book',
+          label: 'GitHub',
+          position: 'right',
+        },
+      ],
+    },
+    footer: {
+      style: 'dark',
+      links: [
+        {
+          title: 'Documentation',
+          items: [
+            {
+              label: 'Introduction',
+              to: '/physical-ai-humanoid-robotics/intro',
+            },
+          ],
+        },
+        {
+          title: 'Connect',
+          items: [
+            {
+              label: 'GitHub',
+              href: 'https://github.com/WA-code-Github-Account/humanoid-robotics-book',
+            },
+            {
+              label: 'GIAIC',
+              href: 'https://www.giaic.com',
+            },
+          ],
+        },
+      ],
+      copyright: `Copyright © ${new Date().getFullYear()} Aziza Siddiqui | GIAIC Student. Built with Docusaurus.`,
+    },
+    prism: {
+      theme: prismThemes.github,
+      darkTheme: prismThemes.dracula,
+    },
+  } satisfies Preset.ThemeConfig,
 };
 
-module.exports = config;
+export default config;
