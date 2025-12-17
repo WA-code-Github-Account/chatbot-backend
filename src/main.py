@@ -3,7 +3,7 @@ from config.settings import settings
 from src.api.v1.router import api_router
 from src.middleware.error_handler import setup_error_handlers, LoggingMiddleware
 import uvicorn
-
+import os
 
 def create_app():
     """Create and configure the FastAPI application"""
@@ -16,36 +16,30 @@ def create_app():
     # Set up error handlers
     setup_error_handlers(app)
 
-    # Add middleware
-    # Add middleware
-    #app.add_middleware(LoggingMiddleware)
-
+    # Add middleware if needed
+    # app.add_middleware(LoggingMiddleware)
 
     # Include API routes
     try:
         app.include_router(api_router, prefix="/api/v1")
     except Exception as e:
         print(f"Warning: Could not load API routes: {e}")
-        # Still add a basic route for testing
+        # Add a simple test route if API routes fail
         @app.get("/api/v1/test")
         async def test_endpoint():
             return {"message": "API routes not loaded due to dependency issues"}
 
+    # Health check endpoint
     @app.get("/health")
     async def health_check():
         return {"status": "healthy", "service": "RAG System API"}
 
     return app
 
-
 # Create the application instance
 app = create_app()
 
-
 if __name__ == "__main__":
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True
-    )
+    # Use Railway's PORT environment variable if available
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
