@@ -1,0 +1,22 @@
+[tool.ruff]
+# Allow lines to be as long as 120 characters
+line-length = 120
+# Set the target version to Python 3.11
+target-version = "py311"
+
+[tool.ruff.lint]
+# Enable pycodestyle (`E`) and Bug Bear (`B`) rules
+select = ["E", "W", "F", "B", "I", "C9", "N", "UP", "YTT", "ANN", "ASYNC", "S", "C4", "DTZ", "T20"]
+# Avoid trying to fix flake8 (`E`) errors
+ignore = [
+    "ANN101",  # Missing type annotation for `self` in method
+    "ANN102",  # Missing type annotation for `cls` in classmethod
+]
+
+[tool.black]
+line-length = 120
+target-version = ['py311']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
