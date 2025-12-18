@@ -9,7 +9,7 @@ const Chatbot = () => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // ✅ FIXED: correct working Railway endpoint
+  // ✅ TEMPORARY TEST: using working /rag/test endpoint
   const apiUrl =
     'https://web-production-113b9.up.railway.app/api/v1/rag/test';
 
