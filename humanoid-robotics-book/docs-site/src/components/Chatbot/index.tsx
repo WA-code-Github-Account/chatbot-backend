@@ -9,9 +9,9 @@ const Chatbot = () => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // ✅ LIVE RAILWAY BACKEND URL
+  // ✅ FIXED: correct working Railway endpoint
   const apiUrl =
-    'https://web-production-113b9.up.railway.app/api/v1/rag/query';
+    'https://web-production-113b9.up.railway.app/api/v1/rag/test';
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -56,7 +56,7 @@ const Chatbot = () => {
 
       const botMessage = {
         id: Date.now() + 1,
-        text: data.response,
+        text: data.response ?? 'No response from backend',
         sender: 'bot' as const,
       };
 
