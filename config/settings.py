@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
+from typing import Optional, List
 
 
 class Settings(BaseSettings):
@@ -25,7 +25,10 @@ class Settings(BaseSettings):
     # Application settings
     app_name: str = "RAG System API"
     debug: bool = True  # Enable debug mode for development
-    
+
+    # CORS settings
+    cors_origins: List[str] = ["https://hackhathon-1-2.vercel.app", "http://localhost:3000"]
+
     class Config:
         env_file = ".env"
 

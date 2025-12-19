@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from config.settings import settings
 from src.api.v1.router import api_router
 from src.middleware.error_handler import setup_error_handlers, LoggingMiddleware
@@ -11,6 +12,16 @@ def create_app():
         title=settings.app_name,
         debug=settings.debug,
         version="1.0.0"
+    )
+
+    # CORS settings - allow requests from your frontend domain
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
+        allow_headers=["*"],
+        # expose_headers=["Access-Control-Allow-Origin"]
     )
 
     # Set up error handlers
