@@ -2,6 +2,7 @@ from groq import AsyncGroq
 from config.settings import settings
 from typing import List, Dict, Any
 import logging
+import asyncio
 
 
 logger = logging.getLogger(__name__)
@@ -11,33 +12,43 @@ class LLMService:
     def __init__(self):
         self.client = AsyncGroq(api_key=settings.groq_api_key)
         self.default_model = "llama3-70b-8192"  # Using a powerful model for better responses
+        # Initialize embedding model (using a sentence transformer model)
+        try:
+            from sentence_transformers import SentenceTransformer
+            self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        except ImportError:
+            logger.warning("sentence-transformers not installed. Using mock embeddings.")
+            self.embedding_model = None
 
     async def generate_embedding(self, text: str) -> List[float]:
         """
-        Generate an embedding for the provided text using an appropriate model.
-        Note: Groq doesn't provide embedding APIs directly, so we'll need to use an alternative approach.
-        For now, returning a mock implementation. In a real application, you might use a different service for embeddings.
+        Generate an embedding for the provided text using sentence transformers.
+        Falls back to mock implementation if sentence_transformers is not available.
         """
-        # For this implementation, I'll return a mock embedding
-        # In a real implementation, you would use an embedding service
-        import hashlib
-        
-        # Create a hash-based mock embedding
-        hash_object = hashlib.sha256(text.encode())
-        hex_dig = hash_object.hexdigest()
-        
-        # Convert hex to a list of floats (simplified approach for demo)
-        embedding = []
-        for i in range(0, len(hex_dig), 2):
-            val = int(hex_dig[i:i+2], 16)
-            embedding.append((val / 255.0) * 2 - 1)  # Normalize between -1 and 1
-        
-        # Ensure we have the expected number of dimensions (truncate or pad)
-        embedding = embedding[:768]  # Assuming 768 dimensions
-        while len(embedding) < 768:
-            embedding.append(0.0)
-        
-        return embedding
+        if self.embedding_model:
+            # Use the sentence transformer model to generate embeddings
+            embedding = self.embedding_model.encode([text])[0].tolist()
+            return embedding
+        else:
+            # Fallback to mock implementation if dependency is not available
+            import hashlib
+
+            # Create a hash-based mock embedding
+            hash_object = hashlib.sha256(text.encode())
+            hex_dig = hash_object.hexdigest()
+
+            # Convert hex to a list of floats (simplified approach for demo)
+            embedding = []
+            for i in range(0, len(hex_dig), 2):
+                val = int(hex_dig[i:i+2], 16)
+                embedding.append((val / 255.0) * 2 - 1)  # Normalize between -1 and 1
+
+            # Ensure we have the expected number of dimensions (truncate or pad to 384 for MiniLM model)
+            embedding = embedding[:384]  # Assuming 384 dimensions for MiniLM
+            while len(embedding) < 384:
+                embedding.append(0.0)
+
+            return embedding
 
     async def generate_response(self, prompt: str, context: str = "", language: str = "en") -> str:
         """
@@ -82,12 +93,12 @@ class LLMService:
         # For this implementation, we'll use a simple keyword overlap approach
         response_words = set(response.lower().split())
         context_words = set(source_context.lower().split())
-        
+
         if not context_words:
             return 0.0
-        
+
         overlap = len(response_words.intersection(context_words))
         accuracy = overlap / len(context_words)
-        
+
         # Ensure accuracy is between 0 and 1
         return min(1.0, accuracy)
