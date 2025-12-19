@@ -1,0 +1,368 @@
+# RAG System API Contract
+
+## OpenAPI 3.0 Specification
+
+```yaml
+openapi: 3.0.0
+info:
+  title: RAG System API
+  description: API for the Retrieval-Augmented Generation system
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+servers:
+  - url: https://rag-system.example.com/api/v1
+    description: Production server
+  - url: http://localhost:8000/api/v1
+    description: Development server
+
+paths:
+  /auth/token:
+    post:
+      tags:
+        - Authentication
+      summary: OAuth2 token generation
+      operationId: generateToken
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: The username for authentication
+                password:
+                  type: string
+                  description: The password for authentication
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: JWT access token
+                  token_type:
+                    type: string
+                    description: Type of token (typically "bearer")
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    description: Error message
+
+  /auth/profile:
+    get:
+      tags:
+        - Authentication
+      summary: Get user profile
+      operationId: getUserProfile
+      security:
+        - OAuth2: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /documents/upload:
+    post:
+      tags:
+        - Documents
+      summary: Upload a new document
+      operationId: uploadDocument
+      security:
+        - OAuth2: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The document file to upload
+                title:
+                  type: string
+                  description: Title of the document
+                description:
+                  type: string
+                  description: Optional description of the document
+              required:
+                - file
+                - title
+      responses:
+        '201':
+          description: Document uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          description: Invalid file format or size > 10MB
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    description: Error message
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /documents:
+    get:
+      tags:
+        - Documents
+      summary: List documents
+      operationId: listDocuments
+      security:
+        - OAuth2: []
+      parameters:
+        - name: skip
+          in: query
+          description: Number of documents to skip
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          in: query
+          description: Maximum number of documents to return
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 100
+      responses:
+        '200':
+          description: List of documents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documents:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Document'
+                  total:
+                    type: integer
+                    description: Total number of documents
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /documents/{id}:
+    delete:
+      tags:
+        - Documents
+      summary: Delete a document
+      operationId: deleteDocument
+      security:
+        - OAuth2: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Document ID
+      responses:
+        '200':
+          description: Document deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Insufficient permissions to delete document
+        '404':
+          description: Document not found
+
+  /rag/query:
+    post:
+      tags:
+        - RAG
+      summary: Submit a query and receive RAG-enhanced response
+      operationId: submitQuery
+      security:
+        - OAuth2: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: The query to process
+                language:
+                  type: string
+                  description: Language of the query ('en' or 'ur')
+                  default: 'en'
+                max_sources:
+                  type: integer
+                  description: Maximum number of sources to cite
+                  default: 5
+                  minimum: 1
+                  maximum: 10
+              required:
+                - query
+      responses:
+        '200':
+          description: RAG-enhanced response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    description: Rate limit exceeded message
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        password:
+          tokenUrl: /auth/token
+          scopes: {}
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique user identifier
+        username:
+          type: string
+          description: User's username
+        email:
+          type: string
+          format: email
+          description: User's email address
+        role:
+          type: string
+          enum: [user, admin, moderator]
+          description: User's role in the system
+        created_at:
+          type: string
+          format: date-time
+          description: When the user account was created
+
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique document identifier
+        title:
+          type: string
+          description: Title of the document
+        description:
+          type: string
+          description: Description of the document
+        source_type:
+          type: string
+          description: Type of the source document (e.g., PDF, text, web page)
+        upload_date:
+          type: string
+          format: date-time
+          description: When the document was uploaded
+        user_id:
+          type: string
+          format: uuid
+          description: ID of the user who uploaded the document
+        page_count:
+          type: integer
+          description: Number of pages in the document
+        chunk_count:
+          type: integer
+          description: Number of chunks the document was split into
+
+    QueryResponse:
+      type: object
+      properties:
+        response:
+          type: string
+          description: The RAG-enhanced response to the query
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceCitation'
+        query_time_ms:
+          type: integer
+          description: Time taken to process the query in milliseconds
+        language:
+          type: string
+          description: Language of the response ('en' or 'ur')
+
+    SourceCitation:
+      type: object
+      properties:
+        document_id:
+          type: string
+          format: uuid
+          description: ID of the source document
+        document_title:
+          type: string
+          description: Title of the source document
+        page_number:
+          type: integer
+          description: Page number in the source document (if applicable)
+        section:
+          type: string
+          description: Section identifier in the source document
+        text_preview:
+          type: string
+          description: Preview text from the source
+        similarity_score:
+          type: number
+          format: float
+          description: Similarity score of this source to the query
+
+  responses:
+    UnauthorizedError:
+      description: Unauthorized - Access token is missing or invalid
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                description: Error message
+```
