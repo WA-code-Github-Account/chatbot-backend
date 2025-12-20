@@ -1,4 +1,4 @@
-# Simple startup script for the RAG System Backend
+***# Simple startup script for the RAG System Backend
 # This starts the server with graceful fallbacks for missing dependencies
 
 import os
@@ -57,4 +57,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000,
         reload=False  # Disable reload in production
-    )
+    )***
