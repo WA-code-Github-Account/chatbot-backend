@@ -13,7 +13,19 @@ def create_app():
         debug=settings.debug,
         version="1.0.0"
     )
-
+    
+    # Database tables creation on startup
+    @app.on_event("startup")
+    async def startup_event():
+        """Create database tables on startup"""
+        try:
+            from config.database import Base, get_engine
+            _, _, sync_engine, _ = get_engine()
+            Base.metadata.create_all(bind=sync_engine)
+            print("Database tables created successfully!")
+        except Exception as e:
+            print(f"Warning: Could not create tables: {e}")
+    
     # CORS settings - allow requests from your frontend domain
     app.add_middleware(
         CORSMiddleware,
@@ -23,13 +35,13 @@ def create_app():
         allow_headers=["*"],
         # expose_headers=["Access-Control-Allow-Origin"]
     )
-
+    
     # Set up error handlers
     setup_error_handlers(app)
-
+    
     # Add middleware if needed
     # app.add_middleware(LoggingMiddleware)
-
+    
     # Include API routes
     try:
         app.include_router(api_router, prefix="/api/v1")
@@ -39,12 +51,12 @@ def create_app():
         @app.get("/api/v1/test")
         async def test_endpoint():
             return {"message": "API routes not loaded due to dependency issues"}
-
+    
     # Health check endpoint
     @app.get("/health")
     async def health_check():
         return {"status": "healthy", "service": "RAG System API"}
-
+    
     return app
 
 # Create the application instance
