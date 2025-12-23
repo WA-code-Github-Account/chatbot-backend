@@ -6,14 +6,13 @@ from src.services.llm_service import LLMService
 from src.services.language_service import LanguageDetectionService
 from src.models.user_query import UserQuery
 from src.models.source_citation import SourceCitation
+from src.models.user import User  # Add this import for users table
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 import uuid
 import logging
 
-
 logger = logging.getLogger(__name__)
-
 
 class RAGService:
     def __init__(self, db_session: AsyncSession):
@@ -34,15 +33,18 @@ class RAGService:
         start_time = datetime.utcnow()
 
         try:
+            # Step 0: Ensure user exists in users table
+            existing_user = await self.db_session.get(User, user_id)
+            if not existing_user:
+                new_user = User(id=user_id, name="Unknown User")  # Adjust default fields as needed
+                self.db_session.add(new_user)
+                await self.db_session.commit()
+
             # Step 1: Detect language if not explicitly provided or verify provided language
             detected_language = self.language_service.detect_language(query_text)
 
-            # Use detected language if none was specified, or validate the specified language
             if language == "detect":
                 language = detected_language
-            else:
-                # If a specific language was requested, still detect to see if translation might be needed
-                pass
 
             # Step 2: Preprocess the query text according to detected language
             processed_query = self.language_service.preprocess_text_for_language(query_text, detected_language)
@@ -57,11 +59,9 @@ class RAGService:
             )
 
             if not search_results:
-                # No relevant documents found
                 response = "I don't have information about this in my knowledge base"
                 sources = []
             else:
-                # Step 5: Get context from relevant chunks
                 context_parts = []
                 sources = []
 
@@ -71,15 +71,13 @@ class RAGService:
                     document_id = payload.get('document_id', '')
 
                     if chunk_content:
-                        # Preprocess context according to language
                         processed_chunk = self.language_service.preprocess_text_for_language(chunk_content, detected_language)
                         context_parts.append(processed_chunk)
 
-                    # Create source citation info
                     source_info = {
                         'document_id': document_id,
                         'score': result.get('score', 0),
-                        'content_preview': chunk_content[:200]  # First 200 chars as preview
+                        'content_preview': chunk_content[:200]
                     }
                     sources.append(source_info)
 
@@ -92,10 +90,9 @@ class RAGService:
                     language=language
                 )
 
-            # Step 7: Calculate response time
             response_time_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
 
-            # Step 8: Save query and response to database
+            # Step 7: Save query and response to database
             user_query = UserQuery(
                 id=uuid.uuid4(),
                 query_text=query_text,
@@ -110,7 +107,7 @@ class RAGService:
             self.db_session.add(user_query)
             await self.db_session.commit()
 
-            # Step 8.5: Save source citations to database
+            # Step 8: Save source citations to database
             for source in sources:
                 citation = SourceCitation(
                     id=uuid.uuid4(),
@@ -129,7 +126,6 @@ class RAGService:
 
             await self.db_session.commit()
 
-            # Step 9: Format response according to requirements
             result = {
                 'response': response,
                 'sources': sources,
@@ -147,10 +143,7 @@ class RAGService:
     async def validate_response_accuracy(self, response: str, sources: List[Dict[str, Any]]) -> float:
         """Validate the accuracy of the response against the provided sources"""
         try:
-            # Combine all source content
             source_content = " ".join([source.get('content_preview', '') for source in sources])
-            
-            # Use LLMService to validate accuracy
             accuracy = await self.llm_service.validate_response_accuracy(response, source_content)
             return accuracy
         except Exception as e:
